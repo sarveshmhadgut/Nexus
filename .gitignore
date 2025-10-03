@@ -5,6 +5,11 @@ __pycache__/
 
 # C extensions
 *.so
+.streamlit
+datasets/*
+!datasets/main_data.csv
+tmdb_genres_cache.json
+.tmdb_genres_cache.json
 
 # Distribution / packaging
 .Python
