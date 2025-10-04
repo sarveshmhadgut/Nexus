@@ -1,5 +1,3 @@
-import os
-import json
 import time
 import random
 import joblib
@@ -21,16 +19,12 @@ try:
 except Exception:
     pass
 
-API_KEY = st.secrets.get("API_KEY")
+API_KEY = st.secrets["API_KEY"]
 
 if not API_KEY:
     st.error(
         "API key not configured. Set API_KEY in .streamlit/secrets.toml or .env, "
         "or export API_KEY in your shell."
-    )
-    st.info(
-        'Example (.streamlit/secrets.toml):\n\nAPI_KEY = "tmdb_XXXXXXXXXXXXXXXX"\n\n'
-        "Example (.env):\n\nAPI_KEY=tmdb_XXXXXXXXXXXXXXXX"
     )
     st.stop()
 
