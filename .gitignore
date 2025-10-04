@@ -11,6 +11,7 @@ datasets/*
 tmdb_genres_cache.json
 .tmdb_genres_cache.json
 .DS_Store
+tmdb_genres_cache.json
 
 # Distribution / packaging
 .Python
