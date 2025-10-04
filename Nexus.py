@@ -14,18 +14,15 @@ from concurrent.futures import ThreadPoolExecutor
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer
 
-# Optional: load from .env if present (development)
 try:
-    from dotenv import load_dotenv  # pip install python-dotenv
+    from dotenv import load_dotenv
 
     load_dotenv()
 except Exception:
     pass
 
-# Prefer Streamlit secrets if available, else environment variable
-API_KEY = st.secrets.get("API_KEY") or os.environ.get("API_KEY")
+API_KEY = st.secrets.get("API_KEY")
 
-# Guard: show a clear UI error and stop if API key missing
 if not API_KEY:
     st.error(
         "API key not configured. Set API_KEY in .streamlit/secrets.toml or .env, "
@@ -37,7 +34,6 @@ if not API_KEY:
     )
     st.stop()
 
-# Load CSS safely
 try:
     with open("./static/style.css") as f:
         css = f.read()

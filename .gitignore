@@ -10,6 +10,7 @@ datasets/*
 !datasets/main_data.csv
 tmdb_genres_cache.json
 .tmdb_genres_cache.json
+.DS_Store
 
 # Distribution / packaging
 .Python
