@@ -1,7 +1,6 @@
 # Nexus: Movie Recommendation System
 
 **Nexus** is a Streamlit-based application for recommending movies using content features and NLP preprocessing.
-**Live Demo:** [https://nexus-mov.streamlit.app/](https://nexus-mov.streamlit.app/)
 
 ---
 
