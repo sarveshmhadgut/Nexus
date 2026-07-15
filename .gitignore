@@ -6,12 +6,9 @@ __pycache__/
 # C extensions
 *.so
 .streamlit
-datasets/*
-!datasets/main_data.csv
-tmdb_genres_cache.json
-.tmdb_genres_cache.json
+data/*
+!data/main_data.csv
 .DS_Store
-tmdb_genres_cache.json
 
 # Distribution / packaging
 .Python
@@ -176,3 +173,4 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+.ruff_cache/

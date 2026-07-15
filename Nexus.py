@@ -1,16 +1,17 @@
-import time
 import random
-import joblib
-import requests
-import pandas as pd
-from PIL import Image
-import streamlit as st
-from io import BytesIO
-from urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
+import time
 from concurrent.futures import ThreadPoolExecutor
-from sklearn.metrics.pairwise import cosine_similarity
+from io import BytesIO
+
+import joblib
+import pandas as pd
+import requests
+import streamlit as st
+from PIL import Image
+from requests.adapters import HTTPAdapter
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from urllib3.util.retry import Retry
 
 try:
     from dotenv import load_dotenv
@@ -22,10 +23,7 @@ except Exception:
 API_KEY = st.secrets["API_KEY"]
 
 if not API_KEY:
-    st.error(
-        "API key not configured. Set API_KEY in .streamlit/secrets.toml or .env, "
-        "or export API_KEY in your shell."
-    )
+    st.error("API key not configured. Set API_KEY in .streamlit/secrets.toml or .env, or export API_KEY in your shell.")
     st.stop()
 
 try:
@@ -47,9 +45,9 @@ if "suggestions" not in st.session_state:
 
 # Load dataset
 try:
-    data = pd.read_csv("./datasets/main_data.csv")
+    data = pd.read_csv("./data/main_data.csv")
 except FileNotFoundError:
-    st.error("datasets/main_data.csv not found. Please add your dataset.")
+    st.error("data/main_data.csv not found. Please add your dataset.")
     st.stop()
 movie_titles = data["movie_title"].tolist()
 
@@ -58,9 +56,11 @@ movie_titles = data["movie_title"].tolist()
 def create_session():
     session = requests.Session()
     retries = Retry(
-        total=5,
+        total=2,
+        connect=1,
+        read=1,
         backoff_factor=0.2,
-        status_forcelist=[429, 500, 504],
+        status_forcelist=[429, 500, 502, 503, 504],
         allowed_methods=frozenset(["GET", "POST"]),
     )
     session.mount("https://", HTTPAdapter(max_retries=retries))
@@ -79,7 +79,7 @@ def create_similarity():
 @st.cache_resource
 def load_model():
     try:
-        return joblib.load("nlp_model.pkl")
+        return joblib.load("./models/nlp_model.pkl")
     except Exception as e:
         st.warning(f"Unable to load nlp_model.pkl: {e}")
         return None
@@ -107,9 +107,7 @@ def rcmd_with_model(m):
     try:
         similarity = create_similarity()
         i = data.loc[data["movie_title"] == m].index[0]
-        lst = sorted(list(enumerate(similarity[i])), key=lambda x: x[1], reverse=True)[
-            1:11
-        ]
+        lst = sorted(list(enumerate(similarity[i])), key=lambda x: x[1], reverse=True)[1:11]
         recommended_movies = [data["movie_title"][a] for a, _ in lst]
         nlp_model = load_model()
         if nlp_model is None:
@@ -133,7 +131,7 @@ def fetch_movie_details(movie_name):
     session = create_session()
     url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={movie_name}"
     try:
-        response = session.get(url, timeout=20)
+        response = session.get(url, timeout=5)
         response.raise_for_status()
         payload = response.json()
         if not payload.get("results"):
@@ -141,21 +139,17 @@ def fetch_movie_details(movie_name):
             return None
         movie = payload["results"][0]
         movie_id = movie["id"]
-        movie["original_title"] = movie.get(
-            "original_title", movie.get("title", movie_name)
-        )
+        movie["original_title"] = movie.get("original_title", movie.get("title", movie_name))
         details_url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={API_KEY}"
-        details_resp = session.get(details_url, timeout=20)
+        details_resp = session.get(details_url, timeout=5)
         details_resp.raise_for_status()
         movie_details = details_resp.json()
         genres = movie_details.get("genres", [])
         movie["genres"] = [g["name"] for g in genres]
-        movie["poster_path"] = movie.get("poster_path") or movie_details.get(
-            "poster_path"
-        )
+        movie["poster_path"] = movie.get("poster_path") or movie_details.get("poster_path")
         return movie
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching movie details: {e}")
+    except requests.exceptions.RequestException:
+        st.warning("Could not connect to TMDB to fetch movie details (Connection timed out).")
         return None
 
 
@@ -169,14 +163,10 @@ def fetch_recommendations(movie_id, retries=3, delay=5):
             resp.raise_for_status()
             payload = resp.json()
             return payload.get("results", [])[:5]
-        except requests.exceptions.RequestException as e:
-            st.warning(
-                f"Attempt {attempt + 1} failed: {e}. Retrying in {delay} seconds..."
-            )
+        except requests.exceptions.RequestException:
+            st.warning(f"Attempt {attempt + 1} failed: Could not connect to TMDB. Retrying...")
             time.sleep(delay)
-    st.error(
-        f"Failed to fetch recommendations for movie ID {movie_id} after {retries} attempts."
-    )
+    st.error(f"Failed to fetch recommendations for movie ID {movie_id} after {retries} attempts.")
     return []
 
 
@@ -197,14 +187,10 @@ def fetch_cast_details(movie_id, retries=3, delay=5):
                 }
                 for c in cast
             ]
-        except requests.exceptions.RequestException as e:
-            st.warning(
-                f"Attempt {attempt + 1} failed: {e}. Retrying in {delay} seconds..."
-            )
+        except requests.exceptions.RequestException:
+            st.warning(f"Attempt {attempt + 1} failed: Could not connect to TMDB. Retrying...")
             time.sleep(delay)
-    st.error(
-        f"Failed to fetch cast details for movie ID {movie_id} after {retries} attempts."
-    )
+    st.error(f"Failed to fetch cast details for movie ID {movie_id} after {retries} attempts.")
     return []
 
 
@@ -212,7 +198,7 @@ def fetch_poster(movie_name):
     session = create_session()
     url = f"https://api.themoviedb.org/3/search/movie?api_key={API_KEY}&query={movie_name}"
     try:
-        resp = session.get(url, timeout=20)
+        resp = session.get(url, timeout=3)
         resp.raise_for_status()
         payload = resp.json()
         if not payload.get("results"):
@@ -223,12 +209,11 @@ def fetch_poster(movie_name):
         if not poster_path:
             return None, title
         poster_url = f"https://image.tmdb.org/t/p/w500{poster_path}"
-        poster_resp = session.get(poster_url, timeout=10)
+        poster_resp = session.get(poster_url, timeout=3)
         if poster_resp.status_code == 200:
             return poster_resp.content, title
         return None, title
-    except requests.exceptions.RequestException as e:
-        # Do not recurse on error; just return no poster
+    except requests.exceptions.RequestException:
         return None, movie_name
 
 
@@ -248,12 +233,13 @@ def display_movie_details(movie_details):
     mov_details = {}
     with st.spinner("Loading..."):
         if movie_details.get("poster_path"):
-            poster_url = (
-                f"https://image.tmdb.org/t/p/w500{movie_details['poster_path']}"
-            )
-            response = requests.get(poster_url)
-            if response.status_code == 200:
-                mov_details["poster"] = Image.open(BytesIO(response.content))
+            poster_url = f"https://image.tmdb.org/t/p/w500{movie_details['poster_path']}"
+            try:
+                response = requests.get(poster_url, timeout=3)
+                if response.status_code == 200:
+                    mov_details["poster"] = Image.open(BytesIO(response.content))
+            except requests.exceptions.RequestException:
+                st.text("No poster available")
         else:
             st.text("No poster available")
         mov_details["details"] = [
@@ -274,11 +260,12 @@ def display_movie_details(movie_details):
                 with cast_cols[i]:
                     if cast_member["profile_path"]:
                         cast_image_url = f"https://image.tmdb.org/t/p/w500{cast_member['profile_path']}"
-                        response = requests.get(cast_image_url)
-                        if response.status_code == 200:
-                            mov_details["cast"].append(
-                                [cast_member, Image.open(BytesIO(response.content))]
-                            )
+                        try:
+                            response = requests.get(cast_image_url, timeout=3)
+                            if response.status_code == 200:
+                                mov_details["cast"].append([cast_member, Image.open(BytesIO(response.content))])
+                        except requests.exceptions.RequestException:
+                            pass
 
     st.markdown("## Overview:")
     col1, col2 = st.columns([1, 2])
@@ -307,23 +294,16 @@ def display_recommended_movie(recommendations):
     st.markdown("## Recommendations:")
     row_count = 2
     movies_per_row = 5
-    rows = [
-        recommendations[i : i + movies_per_row]
-        for i in range(0, len(recommendations), movies_per_row)
-    ][:row_count]
+    rows = [recommendations[i : i + movies_per_row] for i in range(0, len(recommendations), movies_per_row)][:row_count]
     recommend_details = []
     with st.spinner("Fetching recommendations..."):
         with ThreadPoolExecutor() as executor:
-            futures = {
-                executor.submit(fetch_poster, rec): rec for rec in recommendations
-            }
+            futures = {executor.submit(fetch_poster, rec): rec for rec in recommendations}
             for future in futures:
                 try:
                     poster_data, fetched_name = future.result()
                     if poster_data:
-                        recommend_details.append(
-                            [fetched_name, Image.open(BytesIO(poster_data))]
-                        )
+                        recommend_details.append([fetched_name, Image.open(BytesIO(poster_data))])
                     else:
                         recommend_details.append([fetched_name, None])
                 except Exception:
@@ -364,9 +344,7 @@ def print_data(movie_name):
 
 def main_page():
     st.title("Nexus")
-    movie_name = st.text_input(
-        "Enter a Movie Name", value=st.session_state.get("movie_name", "")
-    )
+    movie_name = st.text_input("Enter a Movie Name", value=st.session_state.get("movie_name", ""))
     if movie_name:
         st.session_state.movie_name = movie_name
         st.session_state.page = "recommendations"
@@ -374,25 +352,18 @@ def main_page():
             st.rerun()
     if not st.session_state.get("suggestions"):
         st.write("Suggested Movies:")
-        st.session_state.suggestions = random.sample(
-            movie_titles, min(5, len(movie_titles))
-        )
+        st.session_state.suggestions = random.sample(movie_titles, min(5, len(movie_titles)))
     cols = st.columns(len(st.session_state.suggestions))
     suggestions_data = []
     if st.session_state.suggestions:
         with st.spinner("Fetching suggestions... "):
             with ThreadPoolExecutor() as executor:
-                futures = {
-                    executor.submit(fetch_poster, s): s
-                    for s in st.session_state.suggestions
-                }
+                futures = {executor.submit(fetch_poster, s): s for s in st.session_state.suggestions}
                 for future in futures:
                     try:
                         poster_data, fetched_name = future.result()
                         if poster_data:
-                            suggestions_data.append(
-                                [fetched_name, Image.open(BytesIO(poster_data))]
-                            )
+                            suggestions_data.append([fetched_name, Image.open(BytesIO(poster_data))])
                         else:
                             suggestions_data.append([fetched_name, None])
                     except Exception:

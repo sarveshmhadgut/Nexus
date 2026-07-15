@@ -1,0 +1,40 @@
+[project]
+name = "nexus"
+version = "0.1.0"
+description = "NLP-Powered Movie Recommendation System"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "catppuccin>=2.5.0",
+    "flask>=3.1.3",
+    "gunicorn>=26.0.0",
+    "ipykernel>=7.3.0",
+    "joblib>=1.5.3",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.11.0",
+    "nltk>=3.10.0",
+    "notebook>=7.6.0",
+    "numpy>=2.4.6",
+    "pandas>=3.0.3",
+    "pillow>=12.3.0",
+    "python-dotenv>=1.2.2",
+    "requests>=2.34.2",
+    "scikit-learn>=1.9.0",
+    "scipy>=1.17.1",
+    "seaborn>=0.13.2",
+    "streamlit>=1.59.2",
+    "tmdbv3api>=1.9.0",
+    "tqdm>=4.68.4",
+    "urllib3>=2.7.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.3.0",
+    "pytest>=9.1.1",
+    "ruff>=0.15.21",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]

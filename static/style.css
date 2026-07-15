@@ -1,6 +1,6 @@
 body {
   font-family: "SpaceMono Nerd Font Mono", "Satoshi", "Helvetica Neue", Helvetica, Arial,
-    sans-serif !important;
+    sans-serif;
 }
 
 h1,
@@ -14,13 +14,9 @@ h6 {
   color: #b298ff !important;
 }
 
-button {
-  font-family: "SpaceMono Nerd Font Mono", "Satoshi", "Helvetica Neue", Helvetica, Arial,
-    sans-serif !important;
-}
+
 
 html {
-  font-family: "SpaceMono Nerd Font Mono", "Satoshi" !important;
   background: url("./back.png") no-repeat center center fixed !important;
   background-size: cover !important;
   min-height: 100vh !important;
@@ -36,22 +32,7 @@ h1 {
   text-align: center !important;
 }
 
-button {
-  background-color: #000000;
-  color: #bba4ff;
 
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-button:hover {
-  background-color: #b298ff !important;
-  color: #000000 !important;
-}
-
-button:active {
-  background-color: #b298ff;
-  color: #000000;
-}
 
 
 div.stButton {
@@ -97,4 +78,21 @@ div.stButton > button:active {
   background-color: #b298ff !important;
   color: #000000 !important;
   transform: scale(0.98) !important;
+}
+
+/* Hide Streamlit Default UI Elements */
+header {
+  visibility: hidden !important;
+}
+
+footer {
+  visibility: hidden !important;
+}
+
+.stDeployButton {
+  display: none !important;
+}
+
+#MainMenu {
+  visibility: hidden !important;
 }
